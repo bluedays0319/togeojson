@@ -1,0 +1,41 @@
+from xml.etree import ElementTree as ET
+import json
+
+def kml_to_geojson(kml_file, geojson_file):
+    # Parse the KML file
+    tree = ET.parse(kml_file)
+    root = tree.getroot()
+
+    # Namespace for KML
+    namespace = {'kml': 'http://www.opengis.net/kml/2.2'}
+
+    # Initialize GeoJSON structure
+    geojson = {
+        "type": "FeatureCollection",
+        "features": []
+    }
+
+    # Example: Handle points in KML (you can extend this for LineString, Polygon, etc.)
+    for placemark in root.findall(".//kml:Placemark", namespace):
+        name = placemark.find("kml:name", namespace).text if placemark.find("kml:name", namespace) is not None else "Unnamed"
+        point = placemark.find(".//kml:Point", namespace)
+        if point is not None:
+            coordinates = point.find("kml:coordinates", namespace).text.strip()
+            lon, lat, *_ = [float(x) for x in coordinates.split(",")]
+
+            feature = {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [lon, lat]
+                },
+                "properties": {"name": name}
+            }
+            geojson["features"].append(feature)
+
+    # Save GeoJSON to file
+    with open(geojson_file, "w", encoding="utf-8") as f:
+        json.dump(geojson, f, ensure_ascii=False, indent=4)
+
+# Example usage
+kml_to_geojson("example.kml", "output.geojson")
